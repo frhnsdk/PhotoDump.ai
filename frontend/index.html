@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PhotoDump – Share Your Memories</title>
+  <link rel="stylesheet" href="/static/main.css?v=4" />
+</head>
+<body class="page-index">
+
+  <!-- NAV -->
+  <nav class="navbar">
+    <a class="logo" href="/">
+      <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+      PhotoDump
+    </a>
+    <div class="nav-actions" id="navActions">
+      <a class="btn btn-ghost" href="/login">Log in</a>
+      <a class="btn btn-primary" href="/register">Sign up</a>
+    </div>
+  </nav>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero-content">
+      <h1>Drop & Share<br><span class="gradient-text">Every Memory</span></h1>
+      <p class="hero-sub">
+        Create a private photo dump for any event. Share the link and password —
+        guests can browse, download, and even contribute their own shots.
+      </p>
+      <div class="hero-btns">
+        <a class="btn btn-primary btn-lg" href="/register">Create a Dump</a>
+        <button class="btn btn-outline btn-lg" onclick="document.getElementById('accessModal').classList.add('open')">
+          Access a Dump
+        </button>
+      </div>
+    </div>
+    <div class="hero-art">
+      <div class="art-grid">
+        <div class="art-card art-c1"></div>
+        <div class="art-card art-c2"></div>
+        <div class="art-card art-c3"></div>
+        <div class="art-card art-c4"></div>
+        <div class="art-card art-c5"></div>
+        <div class="art-card art-c6"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FEATURES -->
+  <section class="features">
+    <div class="feature-card">
+      <span class="feat-icon">
+        <span class="gl-icon" style="--gl1:#9b8ff8;--gl2:#6c5ff0"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.95)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg></span>
+      </span>
+      <h3>Password Protected</h3>
+      <p>Every dump has a unique name + password — only the people you want can access it.</p>
+    </div>
+    <div class="feature-card">
+      <span class="feat-icon">
+        <span class="gl-icon" style="--gl1:#5ba8f5;--gl2:#2c7ae0"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.95)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0018 9h-1.26A8 8 0 103 16.3"/></svg></span>
+      </span>
+      <h3>Bulk Upload</h3>
+      <p>Drag &amp; drop thousands of photos at once. Watch them upload in real time.</p>
+    </div>
+    <div class="feature-card">
+      <span class="feat-icon">
+        <span class="gl-icon" style="--gl1:#38d9c0;--gl2:#1ba89a"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.95)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="8 17 12 21 16 17"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.88 18.09A5 5 0 0018 9h-1.26A8 8 0 103 16.29"/></svg></span>
+      </span>
+      <h3>Download All</h3>
+      <p>Guests can download individual photos or grab the entire dump as a ZIP.</p>
+    </div>
+    <div class="feature-card">
+      <span class="feat-icon">
+        <span class="gl-icon" style="--gl1:#f472b6;--gl2:#db2777"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.95)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg></span>
+      </span>
+      <h3>Contributor Section</h3>
+      <p>Let attendees upload their photos — you review and approve before they go live.</p>
+    </div>
+    <div class="feature-card">
+      <span class="feat-icon">
+        <span class="gl-icon" style="--gl1:#fb923c;--gl2:#ea580c"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.95)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></span>
+      </span>
+      <h3>Auto-Expires</h3>
+      <p>Set a lifespan in days or keep it forever. Expired dumps are cleaned up automatically.</p>
+    </div>
+    <div class="feature-card">
+      <span class="feat-icon">
+        <span class="gl-icon" style="--gl1:#4ade80;--gl2:#16a34a"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.95)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></span>
+      </span>
+      <h3>Beautiful Gallery</h3>
+      <p>Responsive masonry grid with full-size preview modal — looks great on any device.</p>
+    </div>
+  </section>
+
+  <!-- ACCESS MODAL -->
+  <div class="modal-backdrop" id="accessModal">
+    <div class="modal">
+      <button class="modal-close" onclick="document.getElementById('accessModal').classList.remove('open')">✕</button>
+      <h2>Access a Dump</h2>
+      <p class="modal-sub">Enter the dump name and password you received.</p>
+      <div id="accessError" class="alert alert-error hidden"></div>
+      <div class="form-group">
+        <label>Dump Name</label>
+        <input type="text" id="accessName" placeholder="my-wedding-2024" />
+      </div>
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" id="accessPass" placeholder="••••••" />
+      </div>
+      <button class="btn btn-primary btn-full" onclick="accessDump()">Access Dump →</button>
+    </div>
+  </div>
+
+  <!-- EMOTIONAL CTA SECTION -->
+  <section class="emotional-cta">
+    <div class="cta-content">
+      <h2>Capture the Moments That Matter</h2>
+      <p>
+        Life's most precious memories deserve to be shared, not forgotten. Whether it's the laughter at your wedding,
+        the tiny smiles of your growing children, or the adventures that define your story — PhotoDump keeps them safe,
+        accessible, and beautiful. Don't let time fade these treasures. Create your dump today and give your memories
+        the home they deserve.
+      </p>
+      <p class="cta-emotion">
+        Because every photo tells a story, and every story deserves to be told forever.
+      </p>
+      <a class="btn btn-primary btn-lg" href="/register">Start Preserving Memories</a>
+    </div>
+    <div class="cta-image">
+      <img src="/photos/kristyna-squared-one-fW0SlUUiBbs-unsplash.jpg" alt="Beautiful family moment captured forever" />
+    </div>
+  </section>
+
+  <footer class="footer">
+    <p>© 2026 PhotoDump · Built with ❤️ for sharing memories</p>
+  </footer>
+
+  <script src="/js/icons.js?v=4"></script>
+  <script src="/js/api.js?v=4"></script>
+  <script>
+    // If logged in, swap nav
+    (function () {
+      const user = API.getUser();
+      if (user) {
+        document.getElementById("navActions").innerHTML =
+          `<span class="nav-user">👋 ${user.username}</span>
+           <a class="btn btn-primary" href="/dashboard">Dashboard</a>`;
+      }
+    })();
+
+    async function accessDump() {
+      const name = document.getElementById("accessName").value.trim();
+      const pass = document.getElementById("accessPass").value;
+      const errEl = document.getElementById("accessError");
+      errEl.classList.add("hidden");
+      if (!name || !pass) { errEl.textContent = "Please fill in all fields."; errEl.classList.remove("hidden"); return; }
+      try {
+        const data = await API.post("/api/dumps/access", { name, password: pass });
+        API.setDumpToken(name, data.dump_token);
+        window.location.href = `/view-dump?dump=${encodeURIComponent(name)}`;
+      } catch (e) {
+        errEl.textContent = e.message || "Access denied.";
+        errEl.classList.remove("hidden");
+      }
+    }
+
+    document.getElementById("accessPass").addEventListener("keydown", e => {
+      if (e.key === "Enter") accessDump();
+    });
+  </script>
+</body>
+</html>

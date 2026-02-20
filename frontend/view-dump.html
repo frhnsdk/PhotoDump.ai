@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>View Dump – PhotoDump</title>
+  <link rel="stylesheet" href="/static/main.css?v=4" />
+</head>
+<body class="page-view" id="pageBody">
+
+  <nav class="navbar">
+    <a class="logo" href="/">
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+      PhotoDump
+    </a>
+    <div class="nav-actions" id="navActions">
+      <a class="btn btn-ghost" href="/access-dump">
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 11-7.78 7.78 5.5 5.5 0 017.78-7.78z"/><path d="M11 6V2"/><path d="M22 11h-4"/></svg>
+        Access Another
+      </a>
+    </div>
+  </nav>
+
+  <div class="page-container">
+
+    <!-- DUMP HEADER -->
+    <div class="dump-header" id="dumpHeader">
+      <div class="dump-title-block">
+        <h1 id="dumpTitle">Loading…</h1>
+        <div class="dump-meta">
+          <span id="dumpMeta"></span>
+          <span class="badge" id="dumpExpiry"></span>
+        </div>
+      </div>
+      <div class="dump-actions" id="downloadActions">
+        <button class="btn btn-outline btn-sm" id="downloadSelBtn" onclick="downloadSelected()" disabled>
+          <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="8 17 12 21 16 17"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.88 18.09A5 5 0 0018 9h-1.26A8 8 0 103 16.29"/></svg>
+          Download Selected
+        </button>
+        <button class="btn btn-primary btn-sm" onclick="downloadAll()">
+          <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="8 17 12 21 16 17"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.88 18.09A5 5 0 0018 9h-1.26A8 8 0 103 16.29"/></svg>
+          Download All
+        </button>
+      </div>
+    </div>
+
+    <!-- TAB BAR -->
+    <div class="tab-bar">
+      <button class="tab-btn active" onclick="switchTab('gallery', this)">
+        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+        Gallery <span class="badge-count" id="galleryCount">0</span>
+      </button>
+      <button class="tab-btn" onclick="switchTab('contribute', this)">
+        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0018 9h-1.26A8 8 0 103 16.3"/></svg>
+        Contribute Photos
+      </button>
+    </div>
+
+    <!-- GALLERY TAB -->
+    <div class="tab-content active" id="tab-gallery">
+      <div class="gallery-toolbar">
+        <label class="check-all-label">
+          <input type="checkbox" id="selectAll" onchange="toggleSelectAll(this)" /> Select all
+        </label>
+      </div>
+      <div id="galleryGrid" class="photo-grid pinterest-grid"></div>
+      <div id="galleryEmpty" class="empty-state hidden">
+        <span class="empty-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+        </span>
+        <p>No photos in this dump yet.</p>
+      </div>
+    </div>
+
+    <!-- CONTRIBUTE TAB -->
+    <div class="tab-content" id="tab-contribute">
+      <div class="contribute-box">
+        <h2>Share Your Photos</h2>
+        <p>Upload photos you took at the event. The dump owner will review and approve them before they appear in the gallery.</p>
+
+        <div class="form-group">
+          <label>Your Name <span class="label-hint">(so people know whose photos these are)</span></label>
+          <input type="text" id="contributorName" placeholder="Jane Doe" />
+        </div>
+
+        <div class="dropzone" id="contribDropzone">
+          <div class="dropzone-inner">
+            <span class="dz-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            </span>
+            <p class="dz-title">Drag & drop your photos here</p>
+            <p class="dz-sub">or click to browse</p>
+            <input type="file" id="contribFileInput" multiple accept="image/*" class="dz-file-input" />
+            <button class="btn btn-outline" onclick="document.getElementById('contribFileInput').click()">Choose Files</button>
+          </div>
+        </div>
+
+        <div id="contribQueue" class="upload-queue hidden">
+          <div class="queue-header">
+            <h3 id="contribQueueTitle">0 files selected</h3>
+            <button class="btn btn-primary btn-sm" onclick="submitContribution()">Submit Photos</button>
+          </div>
+          <div id="contribQueueList" class="queue-list"></div>
+        </div>
+
+        <div id="contribSuccess" class="alert alert-success hidden">
+          ✅ Your photos have been submitted! The dump owner will review them soon.
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- LIGHTBOX -->
+  <div class="lightbox" id="lightbox" onclick="closeLightbox()">
+    <button class="lb-close">✕</button>
+    <button class="lb-arrow lb-prev" onclick="lbNav(-1,event)">‹</button>
+    <img id="lbImg" src="" alt="Preview" onclick="event.stopPropagation()" />
+    <button class="lb-arrow lb-next" onclick="lbNav(1,event)">›</button>
+    <div class="lb-caption" id="lbCaption"></div>
+    <div class="lb-actions">
+      <a id="lbDownload" class="btn btn-outline btn-sm" href="#" download>
+        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="8 17 12 21 16 17"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.88 18.09A5 5 0 0018 9h-1.26A8 8 0 103 16.29"/></svg>
+        Download
+      </a>
+    </div>
+  </div>
+
+  <script src="/js/icons.js?v=4"></script>
+  <script src="/js/api.js?v=4"></script>
+  <script src="/js/view-dump.js?v=4"></script>
+</body>
+</html>

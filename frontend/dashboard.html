@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard – PhotoDump</title>
+  <link rel="stylesheet" href="/static/main.css?v=4" />
+</head>
+<body class="page-dashboard">
+
+  <nav class="navbar">
+    <a class="logo" href="/">
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+      PhotoDump
+    </a>
+    <div class="nav-actions">
+      <span class="nav-user" id="navUser"></span>
+      <button class="btn btn-ghost" onclick="API.logout()">Log out</button>
+    </div>
+  </nav>
+
+  <div class="page-container">
+    <div class="page-header">
+      <div>
+        <h1>Your Dumps</h1>
+        <p class="page-sub" id="dumpCount">Loading…</p>
+      </div>
+      <a class="btn btn-primary" href="/create-dump">
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        New Dump
+      </a>
+    </div>
+
+    <div id="dumpsGrid" class="dumps-grid">
+      <div class="skeleton-card"></div>
+      <div class="skeleton-card"></div>
+      <div class="skeleton-card"></div>
+    </div>
+
+    <div id="emptyState" class="empty-state hidden">
+      <span class="empty-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/><line x1="12" y1="12" x2="12" y2="16"/><line x1="10" y1="14" x2="14" y2="14"/></svg>
+      </span>
+      <h2>No dumps yet</h2>
+      <p>Create your first photo dump to get started.</p>
+      <a class="btn btn-primary btn-lg" href="/create-dump">Create a Dump</a>
+    </div>
+  </div>
+
+
+  <script src="/js/icons.js?v=4"></script>
+  <script src="/js/api.js?v=4"></script>
+  <script src="/js/dashboard.js?v=4"></script>
+</body>
+</html>

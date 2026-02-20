@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sign Up – PhotoDump</title>
+  <link rel="stylesheet" href="/static/main.css?v=4" />
+</head>
+<body class="page-auth">
+  <nav class="navbar">
+    <a class="logo" href="/">
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+      PhotoDump
+    </a>
+  </nav>
+
+  <div class="auth-container">
+    <div class="auth-card">
+      <h1>Create account</h1>
+      <p class="auth-sub">Start sharing your memories today.</p>
+      <div id="regError" class="alert alert-error hidden"></div>
+      <form id="regForm">
+        <div class="form-group">
+          <label>Username</label>
+          <input type="text" id="username" placeholder="yourname" required autocomplete="username" />
+        </div>
+        <div class="form-group">
+          <label>Email</label>
+          <input type="email" id="email" placeholder="you@example.com" required autocomplete="email" />
+        </div>
+        <div class="form-group">
+          <label>Password</label>
+          <input type="password" id="password" placeholder="At least 6 characters" required autocomplete="new-password" />
+        </div>
+        <button type="submit" class="btn btn-primary btn-full" id="regBtn">Create account</button>
+      </form>
+      <p class="auth-switch">Already have an account? <a href="/login">Log in</a></p>
+    </div>
+  </div>
+
+  <script src="/js/icons.js?v=4"></script>
+  <script src="/js/api.js?v=4"></script>
+  <script>
+    if (API.getToken()) window.location.href = "/dashboard";
+
+    document.getElementById("regForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const btn = document.getElementById("regBtn");
+      const errEl = document.getElementById("regError");
+      errEl.classList.add("hidden");
+      btn.textContent = "Creating…";
+      btn.disabled = true;
+      try {
+        const data = await API.post("/api/auth/register", {
+          username: document.getElementById("username").value.trim(),
+          email: document.getElementById("email").value.trim(),
+          password: document.getElementById("password").value,
+        });
+        API.setToken(data.access_token);
+        API.setUser(data.user);
+        window.location.href = "/dashboard";
+      } catch (err) {
+        errEl.textContent = err.message || "Registration failed.";
+        errEl.classList.remove("hidden");
+        btn.textContent = "Create account";
+        btn.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>

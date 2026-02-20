@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Create Dump – PhotoDump</title>
+  <link rel="stylesheet" href="/static/main.css?v=4" />
+</head>
+<body class="page-auth">
+
+  <nav class="navbar">
+    <a class="logo" href="/">
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+      PhotoDump
+    </a>
+    <div class="nav-actions">
+      <a class="btn btn-ghost" href="/dashboard">← Dashboard</a>
+    </div>
+  </nav>
+
+  <div class="auth-container">
+    <div class="auth-card auth-card-wide">
+      <h1>Create Photo Dump</h1>
+      <p class="auth-sub">Set up a new private photo collection.</p>
+      <div id="createError" class="alert alert-error hidden"></div>
+      <form id="createForm">
+
+        <div class="form-group">
+          <label>Dump Name <span class="label-hint">(unique — used to share)</span></label>
+          <input type="text" id="dumpName" placeholder="my-wedding-2024"
+            pattern="[a-zA-Z0-9_\-\s]+" maxlength="100" required />
+          <span class="field-note">Letters, numbers, spaces, hyphens, underscores only.</span>
+        </div>
+
+        <div class="form-group">
+          <label>Description <span class="label-hint">(optional)</span></label>
+          <textarea id="dumpDesc" placeholder="Photos from the big day 🎉" rows="2"></textarea>
+        </div>
+
+        <div class="form-group">
+          <label>Background Color <span class="label-hint">(choose any color for your dump page)</span></label>
+          <div class="color-picker-row">
+            <input type="color" id="bgColorPicker" value="#0d0f14" />
+            <div class="color-preview-box" id="colorPreview" style="background:#0d0f14;"></div>
+            <span class="color-hex-label" id="bgColorHex">#0d0f14</span>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Access Password</label>
+          <input type="password" id="dumpPass" placeholder="Min. 4 characters" minlength="4" required />
+          <span class="field-note">Guests will need this to access the dump.</span>
+        </div>
+
+        <div class="form-group">
+          <label>Dump Duration</label>
+          <div class="radio-group" id="durationGroup">
+            <label class="radio-opt">
+              <input type="radio" name="duration" value="unlimited" checked />
+              <span>Unlimited ♾️</span>
+            </label>
+            <label class="radio-opt">
+              <input type="radio" name="duration" value="7" />
+              <span>7 days</span>
+            </label>
+            <label class="radio-opt">
+              <input type="radio" name="duration" value="30" />
+              <span>30 days</span>
+            </label>
+            <label class="radio-opt">
+              <input type="radio" name="duration" value="90" />
+              <span>90 days</span>
+            </label>
+            <label class="radio-opt">
+              <input type="radio" name="duration" value="custom" />
+              <span>Custom</span>
+            </label>
+          </div>
+          <input type="number" id="customDays" class="hidden" placeholder="Days (e.g. 14)" min="1" max="3650" />
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-full" id="createBtn">
+          Create Dump →
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <script src="/js/icons.js?v=4"></script>
+  <script src="/js/api.js?v=4"></script>
+  <script src="/js/create-dump.js?v=4"></script>
+</body>
+</html>

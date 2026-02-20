@@ -1,0 +1,46 @@
+services:
+
+  # ── PostgreSQL ─────────────────────────────────────────────────────────────
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME:-photodump}
+      POSTGRES_USER: ${DB_USER:-photodump}
+      POSTGRES_PASSWORD: ${DB_PASS:-photodump}
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-photodump} -d ${DB_NAME:-photodump}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # ── FastAPI App ────────────────────────────────────────────────────────────
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "${APP_PORT:-8000}:8000"
+    environment:
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_NAME: ${DB_NAME:-photodump}
+      DB_USER: ${DB_USER:-photodump}
+      DB_PASS: ${DB_PASS:-photodump}
+      SECRET_KEY: ${SECRET_KEY:-change_this_secret_in_production}
+      DATA_DIR: /app/data
+      FRONTEND_DIR: /app/frontend
+    volumes:
+      - photodumpstorage:/app/data
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  pg_data:
+    driver: local
+  photodumpstorage:
+    driver: local
