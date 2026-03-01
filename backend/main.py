@@ -21,7 +21,7 @@ class NoCacheStaticMiddleware(BaseHTTPMiddleware):
 
 import models
 from database import engine, SessionLocal
-from routers import auth, dumps, photos
+from routers import auth, dumps, photos, faces
 
 # ── Create tables ────────────────────────────────────────────────────────────
 models.Base.metadata.create_all(bind=engine)
@@ -73,7 +73,7 @@ app.add_middleware(NoCacheStaticMiddleware)
 app.include_router(auth.router)
 app.include_router(dumps.router)
 app.include_router(photos.router)
-
+app.include_router(faces.router)
 
 # ── Serve frontend ────────────────────────────────────────────────────────────
 if os.path.isdir(FRONTEND_DIR):
@@ -85,7 +85,7 @@ if os.path.isdir(FRONTEND_DIR):
     def serve_index():
         return FileResponse(os.path.join(FRONTEND_DIR, "index.html"))
 
-    for page in ["dashboard", "create-dump", "manage-dump", "access-dump", "view-dump", "login", "register"]:
+    for page in ["dashboard", "create-dump", "manage-dump", "access-dump", "view-dump", "login", "register", "find-photos"]:
         html_file = os.path.join(FRONTEND_DIR, f"{page}.html")
 
         def make_route(path=html_file):

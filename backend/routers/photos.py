@@ -15,6 +15,7 @@ from database import get_db
 import models
 import schemas
 import auth_utils
+import gpu_client
 from routers.dumps import get_dump_or_403, decode_dump_token
 
 try:
@@ -74,6 +75,46 @@ def resolve_dump(
     db: Session,
 ) -> models.Dump:
     return get_dump_or_403(dump_name, dump_token, current_user, db)
+
+
+# ── Background face indexing ─────────────────────────────────────────────────
+
+import asyncio
+import logging
+
+_face_logger = logging.getLogger("face_indexing")
+
+
+async def _index_photo_faces(photo_id: int, dump_id: int, file_path: str, filename: str):
+    """Background task: send a photo to GPU service for face extraction."""
+    if not gpu_client.is_configured():
+        return
+    try:
+        with open(file_path, "rb") as f:
+            photo_bytes = f.read()
+        faces = await gpu_client.extract_embeddings(photo_bytes, filename)
+        if faces is None or not faces:
+            return
+        from database import SessionLocal
+        db = SessionLocal()
+        try:
+            for face in faces:
+                emb = models.FaceEmbedding(
+                    photo_id=photo_id,
+                    dump_id=dump_id,
+                    embedding=face["embedding"],
+                    bbox_x=face.get("bbox_x", 0),
+                    bbox_y=face.get("bbox_y", 0),
+                    bbox_w=face.get("bbox_w", 0),
+                    bbox_h=face.get("bbox_h", 0),
+                )
+                db.add(emb)
+            db.commit()
+            _face_logger.info(f"Indexed {len(faces)} face(s) for photo {photo_id}")
+        finally:
+            db.close()
+    except Exception as e:
+        _face_logger.warning(f"Face indexing failed for photo {photo_id}: {e}")
 
 
 # ── Upload photos ────────────────────────────────────────────────────────────
@@ -139,6 +180,13 @@ async def upload_photos(
     db.commit()
     for p in saved:
         db.refresh(p)
+
+    # Trigger background face indexing for each uploaded photo
+    for p in saved:
+        if p.is_approved:
+            fp = os.path.join(dump_upload_dir(dump.id), p.filename)
+            asyncio.create_task(_index_photo_faces(p.id, dump.id, fp, p.filename))
+
     return saved
 
 

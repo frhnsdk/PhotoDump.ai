@@ -296,4 +296,32 @@
   // ── Init ─────────────────────────────────────────────────────────────────
   await loadDump();
   await loadPhotos();
+
+  // ── Find My Photos button (check GPU availability) ────────────────────────
+  window.goToFindPhotos = () => {
+    window.location.href = `/find-photos?dump=${encodeURIComponent(DUMP_NAME)}`;
+  };
+
+  try {
+    const gpuStatus = await API.get("/api/gpu/status");
+    const tab = document.getElementById("findPhotosTab");
+    if (!gpuStatus.available) {
+      tab.title = "GPU server is not up right now";
+      tab.classList.add("tab-btn-disabled");
+      tab.onclick = (e) => {
+        e.preventDefault();
+        API.showToast("GPU server is not up right now", "warn");
+      };
+    }
+  } catch {
+    const tab = document.getElementById("findPhotosTab");
+    if (tab) {
+      tab.title = "GPU server is not up right now";
+      tab.classList.add("tab-btn-disabled");
+      tab.onclick = (e) => {
+        e.preventDefault();
+        API.showToast("GPU server is not up right now", "warn");
+      };
+    }
+  }
 })();

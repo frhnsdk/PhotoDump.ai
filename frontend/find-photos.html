@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Find My Photos – PhotoDump</title>
+  <link rel="stylesheet" href="/static/main.css?v=5" />
+</head>
+<body class="page-view" id="pageBody">
+
+  <nav class="navbar">
+    <a class="logo" href="/">
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+      PhotoDump
+    </a>
+    <div class="nav-actions" id="navActions">
+      <a class="btn btn-ghost" href="/access-dump">
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 11-7.78 7.78 5.5 5.5 0 017.78-7.78z"/><path d="M11 6V2"/><path d="M22 11h-4"/></svg>
+        Access Another
+      </a>
+    </div>
+  </nav>
+
+  <div class="page-container">
+
+    <!-- DUMP HEADER -->
+    <div class="dump-header" id="dumpHeader">
+      <div class="dump-title-block">
+        <h1 id="dumpTitle">Loading…</h1>
+        <div class="dump-meta">
+          <span id="dumpMeta"></span>
+        </div>
+      </div>
+      <div class="dump-actions">
+        <a class="btn btn-outline btn-sm" id="backToDump" href="#">← Back to Dump</a>
+      </div>
+    </div>
+
+    <!-- GPU STATUS BANNER -->
+    <div id="gpuBanner" class="gpu-banner gpu-banner-loading">
+      <div class="gpu-banner-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><line x1="9" y1="1" x2="9" y2="4"/><line x1="15" y1="1" x2="15" y2="4"/><line x1="9" y1="20" x2="9" y2="23"/><line x1="15" y1="20" x2="15" y2="23"/><line x1="20" y1="9" x2="23" y2="9"/><line x1="20" y1="14" x2="23" y2="14"/><line x1="1" y1="9" x2="4" y2="9"/><line x1="1" y1="14" x2="4" y2="14"/></svg>
+      </div>
+      <span id="gpuBannerText">Checking GPU server…</span>
+    </div>
+
+    <!-- SELFIE UPLOAD SECTION -->
+    <div id="selfieSection" class="face-search-section">
+      <div class="face-search-card">
+        <div class="face-search-header">
+          <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          <div>
+            <h2>Find My Photos</h2>
+            <p class="face-search-desc">Upload a selfie and we'll find every photo you appear in.</p>
+          </div>
+        </div>
+
+        <div class="selfie-upload-area" id="selfieDropzone">
+          <div class="selfie-preview-wrap hidden" id="selfiePreviewWrap">
+            <img id="selfiePreview" src="" alt="Your selfie" />
+            <button class="selfie-remove" onclick="clearSelfie()" title="Remove">×</button>
+          </div>
+          <div class="selfie-prompt" id="selfiePrompt">
+            <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--text3)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+            <p>Drop a selfie here or click to browse</p>
+            <p class="face-search-hint">Use a clear, front-facing photo for best results</p>
+            <input type="file" id="selfieInput" accept="image/*" class="dz-file-input" />
+            <button class="btn btn-outline btn-sm" onclick="document.getElementById('selfieInput').click()">Choose Photo</button>
+          </div>
+        </div>
+
+        <button class="btn btn-primary btn-lg btn-full" id="searchBtn" onclick="startFaceSearch()" disabled>
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          Search My Face
+        </button>
+      </div>
+    </div>
+
+    <!-- SEARCHING INDICATOR -->
+    <div id="searchingIndicator" class="face-searching hidden">
+      <div class="spinner"></div>
+      <p>Scanning faces in the dump… This may take a moment.</p>
+    </div>
+
+    <!-- RESULTS SECTION -->
+    <div id="resultsSection" class="hidden">
+      <div class="results-header">
+        <h2 id="resultsTitle">Results</h2>
+        <button class="btn btn-primary btn-sm" id="downloadMatchedBtn" onclick="downloadMatched()">
+          <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="8 17 12 21 16 17"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.88 18.09A5 5 0 0018 9h-1.26A8 8 0 103 16.29"/></svg>
+          Download All Matched
+        </button>
+      </div>
+      <div id="resultsGrid" class="photo-grid pinterest-grid"></div>
+      <div id="resultsEmpty" class="empty-state hidden">
+        <span class="empty-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+        </span>
+        <p>No matching photos found. Try a different selfie with better lighting.</p>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- LIGHTBOX -->
+  <div class="lightbox" id="lightbox" onclick="closeLightbox()">
+    <button class="lb-close">✕</button>
+    <button class="lb-arrow lb-prev" onclick="lbNav(-1,event)">‹</button>
+    <img id="lbImg" src="" alt="Preview" onclick="event.stopPropagation()" />
+    <button class="lb-arrow lb-next" onclick="lbNav(1,event)">›</button>
+    <div class="lb-caption" id="lbCaption"></div>
+  </div>
+
+  <script src="/js/icons.js?v=5"></script>
+  <script src="/js/api.js?v=5"></script>
+  <script src="/js/find-photos.js?v=5"></script>
+</body>
+</html>

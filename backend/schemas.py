@@ -119,3 +119,25 @@ class PhotoOut(BaseModel):
     uploaded_at: datetime
 
     model_config = {"from_attributes": True}
+
+
+# ── Face Search ─────────────────────────────────────────────────────────────
+
+class FaceSearchResult(BaseModel):
+    photo_id: int
+    original_name: str
+    distance: float
+    bbox_x: int = 0
+    bbox_y: int = 0
+    bbox_w: int = 0
+    bbox_h: int = 0
+
+    model_config = {"from_attributes": True}
+
+
+class GpuStatus(BaseModel):
+    available: bool
+    reason: Optional[str] = None
+    model: Optional[str] = None
+    detector: Optional[str] = None
+    mode: Optional[str] = None

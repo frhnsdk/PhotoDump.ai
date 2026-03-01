@@ -49,10 +49,20 @@
 
 ![Guest Contribute Section](photos/GuestContributeSection.png)
 
+### 🧠 AI Face Recognition (Phase 2)
+- **Find My Photos** — Guests upload a selfie and instantly see every photo they appear in
+- **DeepFace + Facenet512** — 512-dimensional face embeddings with RetinaFace detection
+- **100% Local** — No cloud APIs; all model weights baked into the Docker image at build time
+- **GPU Microservice** — Runs on a separate server (or same machine), portable to any host
+- **Auto-Indexing** — Faces are automatically extracted when photos are uploaded
+- **Manual Indexing** — Owners can trigger full re-index from the Settings tab
+- **Batch Download** — One-click ZIP download of all matched photos
+- **Graceful Degradation** — When the GPU server is down, the UI shows "GPU server is not up right now" and all other features continue working
+
 ### ⚙️ Under the Hood
 - **Thumbnail Generation** — Auto-generated via Pillow with aspect-ratio preservation
 - **Auto-Expiry Cleanup** — Background scheduler (APScheduler) removes expired dumps hourly
-- **Docker-Ready** — Two-container setup (app + PostgreSQL) with persistent volumes
+- **Docker-Ready** — Multi-container setup (app + PostgreSQL + optional GPU service) with persistent volumes
 - **No-Cache Static Middleware** — Ensures CSS/JS updates are always served fresh
 
 ---
@@ -61,37 +71,76 @@
 
 ```
 PhotoDump/
-├── docker-compose.yml          # Orchestrates app + PostgreSQL
+├── docker-compose.yml          # App + PostgreSQL (multi-server GPU setup)
+├── docker-compose-full.yml     # App + PostgreSQL + GPU service (single server)
 ├── Dockerfile                  # Multi-stage build (Python 3.12-slim)
+├── .env.example                # Environment configuration template
 ├── backend/
 │   ├── main.py                 # FastAPI app, middleware, static serving
-│   ├── models.py               # SQLAlchemy ORM — User, Dump, Photo
+│   ├── models.py               # SQLAlchemy ORM — User, Dump, Photo, FaceEmbedding
 │   ├── schemas.py              # Pydantic validation schemas
 │   ├── database.py             # DB engine & session factory
 │   ├── auth_utils.py           # JWT + bcrypt helpers
+│   ├── gpu_client.py           # HTTP client for GPU face-recognition service
 │   ├── requirements.txt        # Python dependencies
 │   └── routers/
 │       ├── auth.py             # /api/auth/* — register, login, me
 │       ├── dumps.py            # /api/dumps/* — CRUD, access, share
-│       └── photos.py           # /api/dumps/*/photos/* — upload, serve, download
+│       ├── photos.py           # /api/dumps/*/photos/* — upload, serve, download
+│       └── faces.py            # /api/gpu/*, /api/dumps/*/index-faces, find-my-photos
+├── gpu-service/                # Standalone GPU microservice (deploy anywhere)
+│   ├── main.py                 # FastAPI: /health, /extract-embeddings, /find-matches
+│   ├── Dockerfile              # Pre-downloads model weights at build time
+│   ├── docker-compose.yml      # Standalone deploy for GPU server
+│   └── requirements.txt        # DeepFace + dependencies
 ├── frontend/
 │   ├── index.html              # Landing page
 │   ├── login.html / register.html
 │   ├── dashboard.html          # Owner dashboard
 │   ├── create-dump.html        # New dump form
-│   ├── manage-dump.html        # Owner view — upload, gallery, pending, settings
-│   ├── view-dump.html          # Guest view — gallery, contribute
+│   ├── manage-dump.html        # Owner view — upload, gallery, pending, settings, face AI
+│   ├── view-dump.html          # Guest view — gallery, contribute, find photos
 │   ├── access-dump.html        # Enter dump name + password
-│   ├── css/main.css            # All styles (dark theme, Pinterest grid, etc.)
+│   ├── find-photos.html        # Face search — upload selfie, view matches
+│   ├── css/main.css            # All styles (dark theme, Pinterest grid, face search)
 │   └── js/
 │       ├── api.js              # API client, auth helpers, image loader
 │       ├── dashboard.js        # Dashboard logic
 │       ├── create-dump.js      # Create dump form
-│       ├── manage-dump.js      # Owner dump management
-│       ├── view-dump.js        # Guest dump viewing
+│       ├── manage-dump.js      # Owner dump management + face indexing
+│       ├── view-dump.js        # Guest dump viewing + find photos link
+│       ├── find-photos.js      # Face search: selfie upload → results
 │       └── icons.js            # SVG icon helpers
 └── photos/                     # Screenshots for this README
 ```
+
+### System Architecture
+
+```
+┌──── Server A (192.168.0.210) ─────────────────────────────────┐
+│                                                                │
+│  ┌──────────────┐    ┌──────────────┐    ┌────────────────┐   │
+│  │  PhotoDump   │    │  PostgreSQL  │    │  Photo         │   │
+│  │  App         │◄──►│  Database    │    │  Storage       │   │
+│  │  (port 8000) │    │  (internal)  │    │  (volume)      │   │
+│  └──────┬───────┘    └──────────────┘    └────────────────┘   │
+│         │  HTTP (GPU_SERVICE_URL)                              │
+└─────────┼─────────────────────────────────────────────────────┘
+          │
+          ▼
+┌──── Server B (192.168.0.106) ─────┐
+│                                    │
+│  ┌──────────────────────────────┐  │
+│  │  GPU Face Recognition        │  │
+│  │  Service (port 5050)         │  │
+│  │  DeepFace + Facenet512       │  │
+│  │  100% Offline                │  │
+│  └──────────────────────────────┘  │
+│                                    │
+└────────────────────────────────────┘
+```
+
+> In single-server mode, all containers run on the same machine using `docker-compose-full.yml`.
 
 **Services:**
 
@@ -99,6 +148,7 @@ PhotoDump/
 |---|---|---|
 | `photodump-app-1` | `python:3.12-slim` | FastAPI + Uvicorn serving API & frontend |
 | `photodump-db-1` | `postgres:16-alpine` | PostgreSQL database |
+| `gpu-service` | `python:3.12-slim` + DeepFace | Face detection & embedding extraction (optional) |
 
 **Persistent Volumes:**
 
@@ -106,6 +156,7 @@ PhotoDump/
 |---|---|---|
 | `pg_data` | `/var/lib/postgresql/data` | Database files |
 | `photodumpstorage` | `/app/data` | Uploaded photos & generated thumbnails |
+| `model_cache` | `/app/models` (GPU service) | DeepFace model weights (Facenet512 + RetinaFace) |
 
 ---
 
@@ -126,49 +177,115 @@ git clone https://github.com/YOUR_USERNAME/PhotoDump.git
 cd PhotoDump
 ```
 
-### Step 2 — Configure Environment (Optional)
+### Step 2 — Configure Environment
 
-Create a `.env` file in the project root to customize settings. If you skip this, sensible defaults are used:
+Copy the example env file and edit it:
+
+```bash
+cp .env.example .env
+```
+
+Key settings in `.env`:
 
 ```env
 # Database
 DB_NAME=photodump
 DB_USER=photodump
-DB_PASS=photodump
+DB_PASS=change_this_db_password
 
-# App
-APP_PORT=8000
+# Security — CHANGE THIS to a long random string
 SECRET_KEY=change_this_secret_in_production
+
+# GPU Service — see Setup A or B below
+GPU_SERVICE_URL=
 ```
 
-> ⚠️ **For production:** Always change `SECRET_KEY` to a long random string and use a strong `DB_PASS`.
+> **For production:** Always change `SECRET_KEY` to a long random string and use a strong `DB_PASS`.
+> Generate one: `python -c "import secrets; print(secrets.token_hex(32))"`
 
-### Step 3 — Build & Start
+---
+
+### Setup A — Single Server (Everything on One Machine)
+
+This runs the app, database, **and** GPU face recognition service all on one machine. Simplest way to get started.
+
+```bash
+docker compose -f docker-compose-full.yml up -d --build
+```
+
+That's it! The GPU service URL is automatically set to `http://gpu-service:5050` inside the compose network.
+
+> **Note:** The first build takes a while (~5-10 min) because it downloads the Facenet512 + RetinaFace model weights (~200MB) and bakes them into the image. Subsequent builds use the Docker cache.
+
+> **GPU acceleration (optional):** If you have an NVIDIA GPU, install [nvidia-container-toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html) on the host, then uncomment the `deploy` section in `docker-compose-full.yml` under `gpu-service`. Without a GPU it runs on CPU (slower but works fine).
+
+### Setup B — Multi-Server (GPU on a Separate Machine)
+
+For better performance, run the GPU service on a dedicated machine (ideally with a GPU) and the main app elsewhere.
+
+#### On the GPU Server (e.g. 192.168.0.106)
+
+1. Copy the `gpu-service/` folder to the GPU machine:
+   ```bash
+   scp -r gpu-service/ user@192.168.0.106:~/gpu-service/
+   ```
+
+2. SSH in and start it:
+   ```bash
+   ssh user@192.168.0.106
+   cd gpu-service
+   docker compose up -d --build
+   ```
+
+3. Verify it's running:
+   ```bash
+   curl http://localhost:5050/health
+   # → {"status":"ok","model":"Facenet512","detector":"retinaface","mode":"local"}
+   ```
+
+#### On the App Server (e.g. 192.168.0.210)
+
+1. Edit `.env` to point to the GPU server:
+   ```env
+   GPU_SERVICE_URL=http://192.168.0.106:5050
+   ```
+
+2. Start the app:
+   ```bash
+   docker compose up -d --build
+   ```
+
+### Setup C — No Face Recognition (App Only)
+
+If you don't need AI face search, just leave `GPU_SERVICE_URL` empty in `.env`:
+
+```env
+GPU_SERVICE_URL=
+```
 
 ```bash
 docker compose up -d --build
 ```
 
-This will:
-1. Build the FastAPI app image (multi-stage, ~200MB)
-2. Pull `postgres:16-alpine` if not cached
-3. Start both containers
-4. Wait for PostgreSQL to be healthy before starting the app
-5. Auto-create all database tables on first run
+The app works normally — the "Find My Photos" button will show "GPU server is not up right now" and all other features work perfectly.
 
-### Step 4 — Open the App
+---
 
-Open your browser and go to:
+### Open the App
 
 ```
 http://localhost:8000
 ```
 
-That's it! Register an account, create a dump, and start uploading.
+Register an account, create a dump, and start uploading!
 
 ### Stopping
 
 ```bash
+# Single server
+docker compose -f docker-compose-full.yml down
+
+# Multi-server (run on each machine)
 docker compose down
 ```
 
@@ -177,10 +294,10 @@ docker compose down
 ### Full Reset (Deletes Everything)
 
 ```bash
-docker compose down -v
+docker compose -f docker-compose-full.yml down -v
 ```
 
-> The `-v` flag removes volumes — all uploaded photos and database data will be permanently deleted.
+> The `-v` flag removes volumes — all uploaded photos, database data, and model cache will be permanently deleted.
 
 ---
 
@@ -266,92 +383,93 @@ This hits every API endpoint (register → login → create dump → upload → 
 | `GET` | `/api/dumps/{name}/photos/{id}/file` | Serve full image |
 | `GET` | `/api/dumps/{name}/photos/{id}/thumb` | Serve thumbnail |
 | `GET` | `/api/dumps/{name}/photos/{id}/download` | Download single photo |
-| `GET` | `/api/dumps/{name}/download-all` | Download all as ZIP |
+| `GET` | `/api/dumps/{name}/download-all` | Download all as ZIP (supports `?ids=` filter) |
 | `DELETE` | `/api/dumps/{name}/photos/{id}` | Delete a photo |
 | `PATCH` | `/api/dumps/{name}/photos/{id}/approve` | Approve a contributed photo |
+
+### Face Recognition (GPU)
+| Method | Endpoint | Description |
+|---|---|---|
+| `GET` | `/api/gpu/status` | Check GPU service availability |
+| `POST` | `/api/dumps/{name}/index-faces` | Index all unindexed photos for face embeddings |
+| `POST` | `/api/dumps/{name}/find-my-photos` | Upload selfie → find matching photos (multipart) |
+
+### GPU Microservice (internal, port 5050)
+| Method | Endpoint | Description |
+|---|---|---|
+| `GET` | `/health` | Health check + model info |
+| `POST` | `/extract-embeddings` | Upload image → get face embeddings + bounding boxes |
+| `POST` | `/find-matches` | Probe embedding + candidates → matching indices |
+
+---
+
+## 🧠 How Face Recognition Works
+
+```
+                         ┌─────────────────────────┐
+  1. Upload photos ────► │  PhotoDump App           │
+                         │  (auto-indexes faces     │
+                         │   in background)          │
+                         └──────────┬──────────────┘
+                                    │ HTTP POST /extract-embeddings
+                                    ▼
+                         ┌─────────────────────────┐
+                         │  GPU Service             │
+                         │  DeepFace + Facenet512   │
+                         │  RetinaFace detector     │
+                         └──────────┬──────────────┘
+                                    │ returns 512-dim embeddings
+                                    ▼
+                         ┌─────────────────────────┐
+                         │  PostgreSQL              │
+                         │  face_embeddings table   │
+                         │  (JSON column, 512 floats│
+                         │   per face + bbox)       │
+                         └──────────┬──────────────┘
+                                    │
+  2. Guest uploads selfie ────────► │ cosine similarity search
+                                    │ threshold ≤ 0.35
+                                    ▼
+                         ┌─────────────────────────┐
+                         │  Matched Photos          │
+                         │  Filtered gallery +      │
+                         │  one-click ZIP download  │
+                         └─────────────────────────┘
+```
+
+### Face Embeddings Table
+
+```
+face_embeddings
+├── id              (PK, auto-increment)
+├── photo_id        (FK → photos, CASCADE delete)
+├── dump_id         (FK → dumps, CASCADE delete)
+├── embedding       (JSON — list of 512 floats)
+├── bbox_x, y, w, h (face bounding box in pixels)
+└── created_at
+```
+
+### Key Technical Decisions
+
+| Decision | Choice | Why |
+|---|---|---|
+| **ML Model** | DeepFace + Facenet512 | Best accuracy/speed tradeoff, 512-dim embeddings |
+| **Detector** | RetinaFace | Accurate multi-face detection, handles angles well |
+| **Vector Storage** | PostgreSQL JSON column | No extra dependencies (pgvector), works for dumps up to ~10K photos |
+| **Distance Metric** | Cosine distance (threshold ≤ 0.35) | Standard for face embeddings, tunable via env var |
+| **Processing** | Background async task on upload + manual trigger | Keeps uploads fast, owner can re-index anytime |
+| **GPU Support** | Optional NVIDIA via nvidia-container-toolkit | CPU fallback works, GPU just makes it faster |
+| **Privacy** | 100% local, all env vars block external calls | HF_HUB_OFFLINE=1, TRANSFORMERS_OFFLINE=1, models baked into image |
 
 ---
 
 ## 🗺️ Roadmap
 
-### 🧠 Phase 2 — AI Face Recognition (Planned)
-
-The next major feature is **AI-powered face recognition** so guests at an event can instantly find and download only the photos they appear in.
-
-#### The Vision
-
-> _You attend a wedding with 500 photos. Instead of scrolling through all of them, you upload a single selfie — and PhotoDump instantly shows you every photo where your face appears. One tap to download them all._
-
-#### Planned Architecture
-
-```
-┌─────────────────────────────────────────────────────────┐
-│                    PhotoDump App                        │
-│                                                         │
-│  ┌───────────┐   ┌──────────────┐   ┌───────────────┐  │
-│  │  Upload    │──▶│  Face Index  │──▶│  Embeddings   │  │
-│  │  Pipeline  │   │  Worker      │   │  Database     │  │
-│  └───────────┘   └──────────────┘   └───────────────┘  │
-│                         │                    │          │
-│                         ▼                    ▼          │
-│                  ┌──────────────┐   ┌───────────────┐  │
-│                  │  face_recog  │   │  "Find My     │  │
-│                  │  / InsightFace│   │   Photos"     │  │
-│                  │  / FaceNet   │   │   Search UI   │  │
-│                  └──────────────┘   └───────────────┘  │
-└─────────────────────────────────────────────────────────┘
-```
-
-#### How It Will Work
-
-1. **On Upload** — When photos are uploaded to a dump, a background worker detects all faces using a model like [InsightFace](https://github.com/deepinsight/insightface) or [face_recognition](https://github.com/ageitgey/face_recognition) and stores 128/512-dimensional face embeddings in the database.
-
-2. **Face Embeddings Table** — A new `face_embeddings` table:
-   ```
-   face_embeddings
-   ├── id              (PK)
-   ├── photo_id        (FK → photos)
-   ├── dump_id         (FK → dumps)
-   ├── embedding       (vector — 512 floats)
-   ├── bbox_x, y, w, h (face location in image)
-   └── created_at
-   ```
-
-3. **"Find My Photos" Button** — Guests can upload a selfie or take a photo with their webcam. The app generates an embedding for their face and runs a **cosine similarity search** against all embeddings in that dump.
-
-4. **Similarity Threshold** — Faces with similarity > 0.6 (tunable) are considered matches. The guest sees a filtered gallery of only their photos.
-
-5. **Batch Download** — One-click ZIP download of all matched photos.
-
-#### Technical Decisions To Make
-
-| Decision | Options | Tradeoffs |
-|---|---|---|
-| **ML Model** | InsightFace (ArcFace) vs face_recognition (dlib) vs FaceNet | InsightFace is most accurate; dlib is simplest to install; FaceNet is well-documented |
-| **Vector DB** | pgvector (PostgreSQL extension) vs in-memory numpy vs Pinecone | pgvector keeps everything in one DB; numpy is simple for small dumps; Pinecone scales but adds external dependency |
-| **Processing** | Synchronous on upload vs background Celery worker vs on-demand | Background worker keeps uploads fast; on-demand avoids pre-processing cost |
-| **GPU Support** | CPU-only vs CUDA vs ONNX Runtime | CPU works for ~100 photos; GPU needed for 1000+; ONNX is a good middle ground |
-| **Privacy** | Process locally only vs optional cloud API | Local-only respects privacy; cloud API (AWS Rekognition) is simpler but sends photos externally |
-
-#### Implementation Phases
-
-- **Phase 2a** — Face detection & embedding extraction on photo upload (background worker)
-- **Phase 2b** — "Find My Photos" UI with selfie upload + webcam capture
-- **Phase 2c** — Cosine similarity search using pgvector
-- **Phase 2d** — Filtered gallery view + batch download of matched photos
-- **Phase 2e** — Face clustering (auto-group photos by person without needing a selfie)
-- **Phase 2f** — Optional face tagging (owner can name detected faces)
-
-#### New Dependencies (Planned)
-
-```
-insightface          # or face_recognition
-onnxruntime          # Efficient model inference
-pgvector             # PostgreSQL vector similarity extension
-numpy                # Embedding math
-opencv-python-headless  # Image preprocessing
-celery + redis       # Background task queue (optional)
-```
+### Future Enhancements (Planned)
+- **Face Clustering** — Auto-group photos by person without needing a selfie
+- **Face Tagging** — Owner can name detected faces
+- **pgvector** — Switch from JSON to native vector similarity for larger dumps
+- **Webcam Capture** — Take a selfie directly from the browser instead of uploading
 
 ---
 
@@ -365,6 +483,8 @@ celery + redis       # Background task queue (optional)
 | **Auth** | JWT (python-jose) + bcrypt |
 | **Images** | Pillow (thumbnails, processing) |
 | **Scheduler** | APScheduler (expired dump cleanup) |
+| **Face Recognition** | DeepFace 0.0.93, Facenet512, RetinaFace |
+| **GPU Communication** | httpx (async HTTP client) |
 | **Frontend** | Vanilla HTML/CSS/JS (no framework) |
 | **Containers** | Docker, Docker Compose |
 

@@ -1,3 +1,8 @@
+# ── PhotoDump — All-In-One (Single Server) ──────────────────────────────────
+# Runs app + database + GPU service on ONE machine.
+# Usage:
+#   docker compose -f docker-compose-full.yml up -d --build
+
 services:
 
   # ── PostgreSQL ─────────────────────────────────────────────────────────────
@@ -16,6 +21,37 @@ services:
       timeout: 5s
       retries: 10
 
+  # ── GPU Face Recognition Service ───────────────────────────────────────────
+  gpu-service:
+    build:
+      context: ./gpu-service
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      DEEPFACE_HOME: /app/models
+      DEEPFACE_MODEL: ${DEEPFACE_MODEL:-Facenet512}
+      DEEPFACE_DETECTOR: ${DEEPFACE_DETECTOR:-retinaface}
+      SIMILARITY_THRESHOLD: ${SIMILARITY_THRESHOLD:-0.35}
+      TF_CPP_MIN_LOG_LEVEL: "2"
+      DO_NOT_TRACK: "1"
+      HF_HUB_OFFLINE: "1"
+      TRANSFORMERS_OFFLINE: "1"
+    volumes:
+      - model_cache:/app/models
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5050/health')"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
   # ── FastAPI App ────────────────────────────────────────────────────────────
   app:
     build:
@@ -31,7 +67,7 @@ services:
       DB_USER: ${DB_USER:-photodump}
       DB_PASS: ${DB_PASS:-photodump}
       SECRET_KEY: ${SECRET_KEY:-change_this_secret_in_production}
-      GPU_SERVICE_URL: ${GPU_SERVICE_URL:-}
+      GPU_SERVICE_URL: http://gpu-service:5050
       DATA_DIR: /app/data
       FRONTEND_DIR: /app/frontend
     volumes:
@@ -39,9 +75,13 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      gpu-service:
+        condition: service_healthy
 
 volumes:
   pg_data:
     driver: local
   photodumpstorage:
+    driver: local
+  model_cache:
     driver: local

@@ -1,5 +1,5 @@
 from sqlalchemy import (
-    Column, Integer, String, Boolean, DateTime, ForeignKey, Text, BigInteger
+    Column, Integer, String, Boolean, DateTime, ForeignKey, Text, BigInteger, JSON
 )
 from sqlalchemy.orm import relationship
 from datetime import datetime, timezone
@@ -57,3 +57,21 @@ class Photo(Base):
 
     dump = relationship("Dump", back_populates="photos")
     uploader = relationship("User", back_populates="photos")
+    face_embeddings = relationship("FaceEmbedding", back_populates="photo", cascade="all, delete-orphan")
+
+
+class FaceEmbedding(Base):
+    __tablename__ = "face_embeddings"
+
+    id = Column(Integer, primary_key=True, index=True)
+    photo_id = Column(Integer, ForeignKey("photos.id", ondelete="CASCADE"), nullable=False, index=True)
+    dump_id = Column(Integer, ForeignKey("dumps.id", ondelete="CASCADE"), nullable=False, index=True)
+    embedding = Column(JSON, nullable=False)         # list of 512 floats
+    bbox_x = Column(Integer, default=0)
+    bbox_y = Column(Integer, default=0)
+    bbox_w = Column(Integer, default=0)
+    bbox_h = Column(Integer, default=0)
+    created_at = Column(DateTime, default=utcnow)
+
+    photo = relationship("Photo", back_populates="face_embeddings")
+    dump = relationship("Dump")

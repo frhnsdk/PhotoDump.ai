@@ -483,4 +483,49 @@
   await loadDump();
   await loadPhotos();
   initSettings();
+
+  // ── Face AI: check GPU status ─────────────────────────────────────────────
+  try {
+    const gpuStatus = await API.get("/api/gpu/status");
+    const banner = document.getElementById("gpuStatusManage");
+    const text = document.getElementById("gpuStatusManageText");
+    const btn = document.getElementById("indexFacesBtn");
+    if (gpuStatus.available) {
+      banner.className = "gpu-banner gpu-banner-ok";
+      text.textContent = `GPU server online — ${gpuStatus.model} model ready`;
+      btn.disabled = false;
+    } else {
+      banner.className = "gpu-banner gpu-banner-down";
+      text.textContent = "GPU server is not up right now";
+    }
+  } catch {
+    const banner = document.getElementById("gpuStatusManage");
+    const text = document.getElementById("gpuStatusManageText");
+    if (banner) {
+      banner.className = "gpu-banner gpu-banner-down";
+      text.textContent = "GPU server is not up right now";
+    }
+  }
+
+  // ── Index Faces ───────────────────────────────────────────────────────────
+  window.indexFaces = async () => {
+    const btn = document.getElementById("indexFacesBtn");
+    const result = document.getElementById("indexFacesResult");
+    btn.disabled = true;
+    btn.textContent = "Indexing…";
+    result.textContent = "";
+    try {
+      const res = await API.post(`/api/dumps/${encodeURIComponent(DUMP_NAME)}/index-faces`, {});
+      result.textContent = `✅ ${res.message}`;
+      result.style.color = "var(--success)";
+    } catch (err) {
+      result.textContent = `❌ ${err.message}`;
+      result.style.color = "var(--danger)";
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = `
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        Index All Faces`;
+    }
+  };
 })();

@@ -1,0 +1,36 @@
+# ── PhotoDump GPU Service — Standalone (NVIDIA CUDA) ────────────────────────
+# Deploy on any server with an NVIDIA GPU:
+#   1. Install nvidia-container-toolkit on the host
+#   2. Copy gpu-service/ folder to the machine
+#   3. cd gpu-service && docker compose up -d --build
+
+services:
+  gpu-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "${GPU_SERVICE_PORT:-5050}:5050"
+    environment:
+      DEEPFACE_HOME: /app/models
+      DEEPFACE_MODEL: ${DEEPFACE_MODEL:-Facenet512}
+      DEEPFACE_DETECTOR: ${DEEPFACE_DETECTOR:-retinaface}
+      SIMILARITY_THRESHOLD: ${SIMILARITY_THRESHOLD:-0.35}
+      TF_CPP_MIN_LOG_LEVEL: "2"
+      DO_NOT_TRACK: "1"
+      HF_HUB_OFFLINE: "1"
+      TRANSFORMERS_OFFLINE: "1"
+    volumes:
+      - model_cache:/app/models
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
+volumes:
+  model_cache:
+    driver: local
