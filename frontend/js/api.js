@@ -48,7 +48,11 @@ const API = (() => {
     let msg = `HTTP ${res.status}`;
     try {
       const body = await res.json();
-      msg = body.detail || body.message || JSON.stringify(body);
+      if (Array.isArray(body.detail)) {
+        msg = body.detail.map(d => d.msg || JSON.stringify(d)).join("; ");
+      } else {
+        msg = body.detail || body.message || JSON.stringify(body);
+      }
     } catch {}
     if (res.status === 401) {
       localStorage.removeItem("pd_token");
