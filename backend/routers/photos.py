@@ -85,8 +85,17 @@ import logging
 _face_logger = logging.getLogger("face_indexing")
 
 
+async def _index_photos_batch(photos: list, dump_id: int):
+    """Background task: index photos one at a time to avoid overwhelming the GPU."""
+    if not gpu_client.is_configured():
+        return
+    for photo in photos:
+        await _index_photo_faces(photo.id, dump_id,
+            os.path.join(dump_upload_dir(dump_id), photo.filename), photo.filename)
+
+
 async def _index_photo_faces(photo_id: int, dump_id: int, file_path: str, filename: str):
-    """Background task: send a photo to GPU service for face extraction."""
+    """Send a single photo to GPU service for face extraction."""
     if not gpu_client.is_configured():
         return
     try:
@@ -181,11 +190,10 @@ async def upload_photos(
     for p in saved:
         db.refresh(p)
 
-    # Trigger background face indexing for each uploaded photo
-    for p in saved:
-        if p.is_approved:
-            fp = os.path.join(dump_upload_dir(dump.id), p.filename)
-            asyncio.create_task(_index_photo_faces(p.id, dump.id, fp, p.filename))
+    # Trigger background face indexing sequentially (avoids overwhelming GPU)
+    approved = [p for p in saved if p.is_approved]
+    if approved:
+        asyncio.create_task(_index_photos_batch(approved, dump.id))
 
     return saved
 

@@ -5,6 +5,8 @@
 ![PhotoDump Landing Page](photos/image1.png)
 ![PhotoDump Preview](photos/image2.png)
 
+> **Portfolio Note:** This project demonstrates my ability to design and deploy **multi-container, multi-server architectures** using **Docker** and **Docker Compose** — including cross-host HTTP communication between independent services, GPU resource management, persistent volume orchestration, and graceful degradation when optional services are unavailable.
+
 ---
 
 ## ✨ Features
@@ -141,6 +143,73 @@ PhotoDump/
 ```
 
 > In single-server mode, all containers run on the same machine using `docker-compose-full.yml`.
+
+### Two-Server Communication Flow
+
+The app server and GPU server are fully independent Docker deployments that communicate over HTTP. Here's how they interact during the two core AI operations:
+
+```
+── Photo Upload (Face Indexing) ──────────────────────────────────────────────
+
+  User                  Server A (App)                 Server B (GPU)
+   │                        │                              │
+   │  POST /photos          │                              │
+   │───────────────────────►│                              │
+   │                        │  save photo + thumbnail      │
+   │                        │──────┐                       │
+   │                        │◄─────┘                       │
+   │  ✅ 200 OK             │                              │
+   │◄───────────────────────│                              │
+   │                        │                              │
+   │                        │  POST /extract-embeddings    │
+   │                        │  (sends photo bytes)         │
+   │                        │─────────────────────────────►│
+   │                        │                              │  RetinaFace detects faces
+   │                        │                              │  Facenet512 → 512-dim vectors
+   │                        │    [{embedding, bbox}, ...]  │
+   │                        │◄─────────────────────────────│
+   │                        │                              │
+   │                        │  store embeddings in         │
+   │                        │  PostgreSQL                  │
+   │                        │──────┐                       │
+   │                        │◄─────┘                       │
+
+── "Find My Photos" (Face Search) ───────────────────────────────────────────
+
+  Guest                 Server A (App)                 Server B (GPU)
+   │                        │                              │
+   │  POST /find-my-photos  │                              │
+   │  (selfie upload)       │                              │
+   │───────────────────────►│                              │
+   │                        │  POST /extract-embeddings    │
+   │                        │  (sends selfie bytes)        │
+   │                        │─────────────────────────────►│
+   │                        │                              │  extract probe embedding
+   │                        │    [{embedding, bbox}]       │
+   │                        │◄─────────────────────────────│
+   │                        │                              │
+   │                        │  POST /find-matches          │
+   │                        │  {probe, candidates[]}       │
+   │                        │─────────────────────────────►│
+   │                        │                              │  cosine similarity
+   │                        │                              │  threshold ≤ 0.35
+   │                        │    [matching indices]        │
+   │                        │◄─────────────────────────────│
+   │                        │                              │
+   │  matched photo list    │                              │
+   │◄───────────────────────│                              │
+```
+
+**Key design decisions for multi-server operation:**
+
+| Aspect | Implementation |
+|---|---|
+| **Service Discovery** | `GPU_SERVICE_URL` env var — point to any host (e.g. `http://192.168.0.106:5050`) |
+| **Communication** | Plain HTTP + JSON over the local network; no message queue needed |
+| **Data Transfer** | Photo bytes sent as multipart form data; embeddings returned as JSON arrays |
+| **Fault Tolerance** | App checks `/health` before GPU calls; UI degrades gracefully if GPU is offline |
+| **Deployment Flexibility** | Same GPU service image runs anywhere — laptop, dedicated GPU server, or cloud VM |
+| **Docker Networking** | Single-server mode uses Compose internal DNS (`http://gpu-service:5050`); multi-server uses host IPs |
 
 **Services:**
 

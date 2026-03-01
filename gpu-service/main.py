@@ -8,9 +8,11 @@ Model weights are cached in a persistent volume.
 import io
 import os
 import time
+import asyncio
 import logging
 from contextlib import asynccontextmanager
 from typing import List, Optional
+from functools import partial
 
 import numpy as np
 from fastapi import FastAPI, UploadFile, File, HTTPException
@@ -142,11 +144,17 @@ async def extract_embeddings(file: UploadFile = File(...)):
     t0 = time.time()
     try:
         img_array = _load_image_from_upload(data)
-        results = deepface_lib.represent(
-            img_path=img_array,
-            model_name=MODEL_NAME,
-            detector_backend=DETECTOR_BACKEND,
-            enforce_detection=False,
+        # Run blocking DeepFace in a thread so /health stays responsive
+        loop = asyncio.get_event_loop()
+        results = await loop.run_in_executor(
+            None,
+            partial(
+                deepface_lib.represent,
+                img_path=img_array,
+                model_name=MODEL_NAME,
+                detector_backend=DETECTOR_BACKEND,
+                enforce_detection=False,
+            ),
         )
     except Exception as e:
         logger.error(f"DeepFace error: {e}")

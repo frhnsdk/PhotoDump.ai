@@ -29,7 +29,7 @@ async def health_check() -> dict:
     if not is_configured():
         return {"available": False, "reason": "GPU_SERVICE_URL not configured"}
     try:
-        async with httpx.AsyncClient(timeout=5) as client:
+        async with httpx.AsyncClient(timeout=15) as client:
             r = await client.get(f"{GPU_SERVICE_URL}/health")
             r.raise_for_status()
             data = r.json()
