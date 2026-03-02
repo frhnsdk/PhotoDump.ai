@@ -86,7 +86,7 @@ _face_logger = logging.getLogger("face_indexing")
 
 
 async def _index_photos_batch(photos: list, dump_id: int):
-    """Background task: index photos one at a time to avoid overwhelming the GPU."""
+    """background task: index photos one at a time to avoid overwhelming the GPU."""
     if not gpu_client.is_configured():
         return
     for photo in photos:
