@@ -61,6 +61,8 @@
 - **Batch Download** — One-click ZIP download of all matched photos
 - **Graceful Degradation** — When the GPU server is down, the UI shows "GPU server is not up right now" and all other features continue working
 
+[![Face Recognition Demo](https://img.youtube.com/vi/c0ubXBC01gE/hqdefault.jpg)](https://youtu.be/c0ubXBC01gE)
+
 ### ⚙️ Under the Hood
 - **Thumbnail Generation** — Auto-generated via Pillow with aspect-ratio preservation
 - **Auto-Expiry Cleanup** — Background scheduler (APScheduler) removes expired dumps hourly
